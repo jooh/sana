@@ -55,12 +55,16 @@ def pearsonz_1vN(rdv, rdvn):
 # matrix (to get a full n by n matrix) and from unit length cosines (to get
 # pairwise correlations between arbitrary n by f and m by f arrays)
 
+def flatten(resp):
+    """flatten dimensions 1: of the input ND array resp."""
+    return np.reshape(resp, [resp.shape[0], np.prod(resp.shape[1:])])
+
 
 def euclideansq(resp):
     """squared euclidean distance matrix"""
     # resp is exemplar by features
     # reshape to put examplars in rows, features in columns
-    resp = np.reshape(resp, [resp.shape[0], np.prod(resp.shape[1:])])
+    resp = flatten(resp)
     # sum of squares over feature dim
     r = np.sum(resp * resp, axis=1)
     rdm = r[:, None] - 2 * np.matmul(resp, resp.T) + r[None, :]
