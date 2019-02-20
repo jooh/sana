@@ -28,7 +28,7 @@ def sqsignit(fun):
 
 class OLS(object):
     """minimal OLS RSA regression model implementation. Inputs (y, b) get squared before
-    use. Outputs as returned as original units. NB! we assume input X is already square."""
+    use. Outputs as returned as original units."""
 
     def __init__(self, X, useconstant=True):
         with tf.variable_scope("rsa-OLS-init"):
