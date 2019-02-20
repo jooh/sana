@@ -1,7 +1,14 @@
 """representational similarity analysis in numpy."""
 import numpy as np
 from sana.base import n2npairs, npairs2n
+import scipy.linalg
 
+def lsbetas(x, y, lapack_driver='gelsy'):
+    """return the parameter estimats (betas) from a least squares fit. Wraps
+    scipy.linalg.lstsq since it seems to outperform np.linalg.lstsq for our typical data
+    at the moment. You can sometimes tune performance further by switching the
+    lapack_driver (we override the default gelsd in favour of gelsy, see scipy docs)."""
+    return scipy.linalg.lstsq(x, y, lapack_driver=lapack_driver)[0]
 
 def square2vec(rdm):
     """map 2D distance matrix to [n,1] vector of unique distances. Returns distances in
@@ -9,7 +16,7 @@ def square2vec(rdm):
     return rdm[np.triu_indices_from(rdm, k=1)][:, None]
 
 
-def allpairwisecontrasts(n):
+def allpairwisecontrasts(n, dtype=np.float64):
     """return a npair by n matrix of contrast vectors. The result differences should be
     compatible with the default scipy distance matrix code (pdist, squareform)."""
     outsize = [n, int(n2npairs(n))]
@@ -48,7 +55,7 @@ def zscore(rdv, axis=0):
 def pearsonz_1vN(rdv, rdvn):
     """Fisher Z-transformed pearson correlation between rdv (f by 1 array) and
     rdvn (f by n array)."""
-    return np.arctanh(np.linalg.lstsq(zscore(rdv), zscore(rdvn), rcond=None)[0])
+    return np.arctanh(lsbetas(zscore(rdv), zscore(rdvn)))
 
 
 # TODO - the two other convenient correlation algorithms - from the covariance
@@ -112,3 +119,46 @@ def rdmsplitter(rdm):
 
 def noiseceiling(metric, trainrdv, testrdv):
     return (metric(trainrdv, testrdv), metric(trainrdv + testrdv, testrdv))
+
+def mrdivide(x, y):
+    """matlab-style matrix right division."""
+    return lsbetas(y.T, x.T).T
+
+def discriminant(x, y, con, covestimator=np.cov):
+    """estimate linear discriminant weights according to some covariance estimator. Note
+    that for neuroimaging data a regularised covariance estimator is a good idea, e.g.
+    lambda res: sklearn.variance.LedoitWolf().fit(res).covariance_."""
+    betas = lsbetas(x, y)
+    conest = con @ betas
+    yhat = x @ betas
+    resid = y - yhat
+    cmat = covestimator(resid)
+    return mrdivide(conest, cmat)
+
+def discriminantcontrast(x, y, con, w):
+    """return discriminant contrast (LDC, crossnobis, CV-Mahalanobis, whatever)."""
+    betas = lsbetas(x, y)
+    conest = con @ betas
+    return np.sum(conest * w, axis=1)
+
+def chunk2bool(chunks, val):
+    """return a vector that's true whenever chunks==any(val)."""
+    return np.any(np.asarray(chunks)[:,None] == np.asarray(val)[None,:], axis=1)
+
+def projectout(x, c):
+    """return x after removing the fitted contribution of c."""
+    return x - c @ lsbetas(c, x)
+
+def polynomialmatrix(nvol, n):
+    """return nvol x n+1 matrix of polynomials of degree 0:n. Often used in fMRI GLMs as
+    a high-pass filter."""
+    return np.linspace(-1., 1., nvol)[:,None] ** np.arange(n+1)[None,:]
+
+def corrpairs(x, y, axis=0):
+    """return the pearson correlation coefficient for each element along axis of x
+    paired with its corresponding element of y."""
+    xn = x-x.mean(axis=axis, keepdims=True)
+    xn /= np.linalg.norm(xn, axis=axis, keepdims=True)
+    yn = y-y.mean(axis=axis, keepdims=True)
+    yn /= np.linalg.norm(yn, axis=axis, keepdims=True)
+    return np.sum(xn.conj()*yn, axis=axis)
