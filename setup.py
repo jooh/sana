@@ -27,7 +27,7 @@ setup(
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
     ],
     description="Sana  is for distance matrix similarity analysis in python / numpy / tensorflow",
     install_requires=requirements,
