@@ -3,12 +3,14 @@ import tensorflow as tf
 from sana.base import npairs2n, n2npairs
 
 
+@tf.function
 def sqsigned(x):
     """return signed square transform. Quirky concept to avoid imaginary numbers when
     working with multiple regression RSA."""
     return tf.sign(x) * (x ** 2)
 
 
+@tf.function
 def sqrtsigned(x):
     """return signed square-root transform (ie, square root on abs value, then returned
     to original sign). Quirky concept to avoid imaginary numbers when working with
@@ -16,6 +18,7 @@ def sqrtsigned(x):
     return tf.sign(x) * tf.sqrt(tf.abs(x))
 
 
+@tf.function
 def sqsignit(fun):
     """class decorator to handle squaring the input (assumed only one that needs
     squaring), square rooting the output."""
@@ -51,19 +54,7 @@ class OLS(object):
             return tf.matmul(self.X, b)
 
 
-def debugit(*arg, feed_dict=None):
-    """silly little convenience function to set up a session, run the global
-    variables initializer, run the graph to get outputs in arg, and
-    set_trace."""
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        res = sess.run(arg, feed_dict=feed_dict)
-        print(res)
-        import pdb
-        pdb.set_trace()
-    return
-
-
+@tf.function
 def measurement(resp, p):
     """model measurement effects in the filters by translating the response at
     each location and stimulus (first 3 axes of resp) toward the filterwise mean
@@ -78,12 +69,14 @@ def measurement(resp, p):
     return resp + transresp
 
 
+@tf.function
 def meanresponse(resp):
     """return the mean model response to each exemplar (first dim), collapsing
     all others."""
     return tf.reduce_mean(tf.convert_to_tensor(resp), axis=[1, 2, 3])
 
 
+@tf.function
 def flatten(resp):
     """flatten the ND response to 2D (exemplar x feature)."""
     with tf.name_scope("rsa-flatten"):
@@ -92,6 +85,7 @@ def flatten(resp):
         return tf.reshape(resp, [rshape[0], tf.reduce_prod(rshape[1:])])
 
 
+@tf.function
 def euclideansq(resp):
     """return the squared euclidean distance matrix for the first axis in
     resp."""
@@ -108,6 +102,7 @@ def euclideansq(resp):
         return square2vec(rdm)
 
 
+@tf.function
 def square2vec(mat):
     """convert square distance matrix in rdm to vector
     form (n by 1)."""
@@ -116,6 +111,7 @@ def square2vec(mat):
         return tf.expand_dims(tf.boolean_mask(mat, triuind(mat)), axis=1)
 
 
+@tf.function
 def zscore(x, axis=0):
     with tf.name_scope("rsa-zscore"):
         x = tf.convert_to_tensor(x)
@@ -123,31 +119,35 @@ def zscore(x, axis=0):
         return tf.nn.batch_normalization(x, m, v, None, None, 1e-12)
 
 
+@tf.function
 def trilind(x):
     """return boolean indices into the lower triangular part of rdm, excluding
     the diagonal. x contains a square distance matrix along the two innermost
     dims."""
-    return _matrix_band_part_inverted(x, 0, -1)
+    return _band_part_inverted(x, 0, -1)
 
 
+@tf.function
 def triuind(x):
     """return boolean indices into the upper triangular part of rdm, excluding
     the diagonal. x contains a square distance matrix along the two innermost
     dims."""
-    return _matrix_band_part_inverted(x, -1, 0)
+    return _band_part_inverted(x, -1, 0)
 
 
-def _matrix_band_part_inverted(x, *arg):
+@tf.function
+def _band_part_inverted(x, *arg):
     with tf.name_scope("rsa-matrix_band_inv"):
         x = tf.convert_to_tensor(x)
         xs = tf.shape(x)
-        # matrix_band_part always -includes- the diagonal, so need to flip the logic
+        # band_part always -includes- the diagonal, so need to flip the logic
         # to always -exclude- it.
         return tf.equal(
-            tf.linalg.matrix_band_part(tf.ones(xs, tf.bool), *arg), tf.constant(False)
+            tf.linalg.band_part(tf.ones(xs, tf.bool), *arg), tf.constant(False)
         )
 
 
+@tf.function
 def vec2square(rdv):
     # TODO - tf doesn't support boolean assign so this is tricky.
     # something like this, but then rdm needs to be set as Variable, which is
