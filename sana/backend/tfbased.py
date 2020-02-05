@@ -119,7 +119,7 @@ def square2vec(mat):
 def zscore(x, axis=0):
     with tf.name_scope("rsa-zscore"):
         x = tf.convert_to_tensor(x)
-        m, v = tf.nn.moments(x, axis, keep_dims=True)
+        m, v = tf.nn.moments(x, axis, keepdims=True)
         return tf.nn.batch_normalization(x, m, v, None, None, 1e-12)
 
 
