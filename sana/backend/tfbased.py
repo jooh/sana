@@ -18,7 +18,6 @@ def sqrtsigned(x):
     return tf.sign(x) * tf.sqrt(tf.abs(x))
 
 
-@tf.function
 def sqsignit(fun):
     """class decorator to handle squaring the input (assumed only one that needs
     squaring), square rooting the output."""
