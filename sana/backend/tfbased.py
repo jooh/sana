@@ -31,7 +31,7 @@ class OLS(object):
     use. Outputs as returned as original units."""
 
     def __init__(self, X, useconstant=True):
-        with tf.variable_scope("rsa-OLS-init"):
+        with tf.name_scope("rsa-OLS-init"):
             self.constant = None
             self.X = X
             if useconstant:
@@ -42,12 +42,12 @@ class OLS(object):
 
     @sqsignit
     def fit(self, y, **kwarg):
-        with tf.variable_scope("rsa-OLS-fit"):
+        with tf.name_scope("rsa-OLS-fit"):
             return tf.matrix_solve_ls(self.X, y, **kwarg)
 
     @sqsignit
     def predict(self, b):
-        with tf.variable_scope("rsa-OLS-predict"):
+        with tf.name_scope("rsa-OLS-predict"):
             return tf.matmul(self.X, b)
 
 
@@ -86,7 +86,7 @@ def meanresponse(resp):
 
 def flatten(resp):
     """flatten the ND response to 2D (exemplar x feature)."""
-    with tf.variable_scope("rsa-flatten"):
+    with tf.name_scope("rsa-flatten"):
         resp = tf.convert_to_tensor(resp)
         rshape = tf.shape(resp)
         return tf.reshape(resp, [rshape[0], tf.reduce_prod(rshape[1:])])
@@ -95,7 +95,7 @@ def flatten(resp):
 def euclideansq(resp):
     """return the squared euclidean distance matrix for the first axis in
     resp."""
-    with tf.variable_scope("rsa-euclidean"):
+    with tf.name_scope("rsa-euclidean"):
         # reshape to 2D (and convert to tensor if necessary)
         respflat = flatten(resp)
         r = tf.reduce_sum(respflat * respflat, axis=1)
@@ -111,13 +111,13 @@ def euclideansq(resp):
 def square2vec(mat):
     """convert square distance matrix in rdm to vector
     form (n by 1)."""
-    with tf.variable_scope("rsa-square2vec"):
+    with tf.name_scope("rsa-square2vec"):
         mat = tf.convert_to_tensor(mat)
         return tf.expand_dims(tf.boolean_mask(mat, triuind(mat)), axis=1)
 
 
 def zscore(x, axis=0):
-    with tf.variable_scope("rsa-zscore"):
+    with tf.name_scope("rsa-zscore"):
         x = tf.convert_to_tensor(x)
         m, v = tf.nn.moments(x, axis, keep_dims=True)
         return tf.nn.batch_normalization(x, m, v, None, None, 1e-12)
@@ -138,7 +138,7 @@ def triuind(x):
 
 
 def _matrix_band_part_inverted(x, *arg):
-    with tf.variable_scope("rsa-matrix_band_inv"):
+    with tf.name_scope("rsa-matrix_band_inv"):
         x = tf.convert_to_tensor(x)
         xs = tf.shape(x)
         # matrix_band_part always -includes- the diagonal, so need to flip the logic
