@@ -144,7 +144,7 @@ def _matrix_band_part_inverted(x, *arg):
         # matrix_band_part always -includes- the diagonal, so need to flip the logic
         # to always -exclude- it.
         return tf.equal(
-            tf.matrix_band_part(tf.ones(xs, tf.bool), *arg), tf.constant(False)
+            tf.linalg.matrix_band_part(tf.ones(xs, tf.bool), *arg), tf.constant(False)
         )
 
 
